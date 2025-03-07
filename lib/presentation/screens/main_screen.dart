@@ -4,6 +4,8 @@ import 'favorites_screen.dart';
 import 'settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }

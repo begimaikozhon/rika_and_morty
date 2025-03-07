@@ -12,32 +12,38 @@ class CharacterBloc extends Bloc<CharacterEvent, CharacterState> {
 
   CharacterBloc(this.apiService, this.characterBox)
       : super(CharacterLoading()) {
-    on<LoadCharacters>((event, emit) async {
-      if (_isFetching) return;
-      _isFetching = true;
+    on<LoadCharacters>(_onLoadCharacters);
+  }
 
-      try {
-        // Загружаем кешированные данные, если они есть
-        if (characterBox.isNotEmpty && state is CharacterLoading) {
-          emit(CharacterLoaded(characters: characterBox.values.toList()));
-        }
+  Future<void> _onLoadCharacters(
+      LoadCharacters event, Emitter<CharacterState> emit) async {
+    if (_isFetching) return;
+    _isFetching = true;
 
-        // Загружаем данные из API
-        final characters = await apiService.fetchCharacters(_currentPage);
-        _currentPage++;
-
-        // Сохраняем в кеш
-        for (var character in characters) {
-          characterBox.put(character.id, character);
-        }
-
+    try {
+      // Проверяем, есть ли кешированные данные
+      if (characterBox.isNotEmpty && state is CharacterLoading) {
+        print("📦 Загружаем данные из кеша...");
         emit(CharacterLoaded(characters: characterBox.values.toList()));
-      } catch (e) {
-        emit(CharacterError("Ошибка загрузки персонажей"));
-      } finally {
-        _isFetching = false;
       }
-    });
+
+      print("🌍 Загружаем данные с API...");
+      final characters = await apiService.fetchCharacters(_currentPage);
+      _currentPage++;
+
+      // Преобразуем список в Map для сохранения в Hive
+      final characterMap = {for (var c in characters) c.id: c};
+      await characterBox.putAll(characterMap);
+
+      print("✅ Данные загружены и сохранены в Hive!");
+
+      emit(CharacterLoaded(characters: characterBox.values.toList()));
+    } catch (e) {
+      print("❌ Ошибка загрузки: $e");
+      emit(CharacterError("Ошибка загрузки персонажей"));
+    } finally {
+      _isFetching = false;
+    }
   }
 }
 
@@ -66,4 +72,7 @@ class CharacterLoaded extends CharacterState {
 class CharacterError extends CharacterState {
   final String message;
   CharacterError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }

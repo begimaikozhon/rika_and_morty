@@ -1,24 +1,23 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:hive/hive.dart';
 
 class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
-  ThemeBloc() : super(ThemeInitial()) {
-    on<LoadTheme>((event, emit) async {
-      final prefs = await SharedPreferences.getInstance();
-      final isDarkMode = prefs.getBool('isDarkMode') ?? false;
+  final Box settingsBox;
+
+  ThemeBloc(this.settingsBox) : super(ThemeInitial()) {
+    on<LoadTheme>((event, emit) {
+      final isDarkMode = settingsBox.get('isDarkMode', defaultValue: false) as bool;
       emit(ThemeUpdated(isDarkMode));
     });
 
-    on<ToggleTheme>((event, emit) async {
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setBool('isDarkMode', event.isDarkMode);
+    on<ToggleTheme>((event, emit) {
+      settingsBox.put('isDarkMode', event.isDarkMode);
       emit(ThemeUpdated(event.isDarkMode));
     });
   }
 }
+
 
 abstract class ThemeEvent extends Equatable {
   @override

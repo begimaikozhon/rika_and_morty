@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rika_and_morty/presentation/blocs/theme_bloc.dart';
 import '../blocs/character_bloc.dart';
 import '../widgets/character_card.dart';
 
@@ -27,7 +28,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Список персонажей")),
+      appBar: AppBar(
+        title: Text("Список персонажей"),
+        actions: [
+          BlocBuilder<ThemeBloc, ThemeState>(
+            builder: (context, state) {
+              bool isDarkMode =
+                  state is ThemeUpdated ? state.isDarkMode : false;
+              return IconButton(
+                icon: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                onPressed: () {
+                  context.read<ThemeBloc>().add(ToggleTheme(!isDarkMode));
+                },
+              );
+            },
+          ),
+        ],
+      ),
       body: BlocBuilder<CharacterBloc, CharacterState>(
         builder: (context, state) {
           if (state is CharacterLoading) {

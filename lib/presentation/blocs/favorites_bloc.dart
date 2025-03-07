@@ -7,19 +7,43 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
   final Box<Character> _favoritesBox;
 
   FavoritesBloc(this._favoritesBox) : super(FavoritesLoaded([])) {
-    on<LoadFavorites>((event, emit) {
-      emit(FavoritesLoaded(_favoritesBox.values.toList()));
-    });
+    on<LoadFavorites>(_onLoadFavorites);
+    on<ToggleFavorite>(_onToggleFavorite);
+  }
 
-    on<ToggleFavorite>((event, emit) {
-      final currentFavorites = _favoritesBox.values.toList();
-      if (currentFavorites.any((c) => c.id == event.character.id)) {
-        _favoritesBox.delete(event.character.id);
-      } else {
-        _favoritesBox.put(event.character.id, event.character);
-      }
+  Future<void> _onLoadFavorites(
+      LoadFavorites event, Emitter<FavoritesState> emit) async {
+    emit(FavoritesLoaded(_favoritesBox.values.toList()));
+  }
+
+  Future<void> _onToggleFavorite(
+      ToggleFavorite event, Emitter<FavoritesState> emit) async {
+    final character = event.character;
+
+    print(
+        "📦 Текущий список избранных: ${_favoritesBox.values.map((c) => c.id).toList()}");
+    print("⭐ Обрабатываем персонажа с ID: ${character.id}");
+
+    if (_favoritesBox.containsKey(character.id)) {
+      await _favoritesBox.delete(character.id);
+      print("❌ Персонаж удалён из избранного");
+    } else {
+      final newCharacter = Character(
+        id: character.id,
+        name: character.name,
+        status: character.status,
+        species: character.species,
+        image: character.image,
+      );
+
+      await _favoritesBox.put(character.id, newCharacter);
+      print("✅ Персонаж добавлен в избранное");
+    }
+
+    // 🔹 Проверяем `emit.isDone`, чтобы избежать ошибки
+    if (!emit.isDone) {
       emit(FavoritesLoaded(_favoritesBox.values.toList()));
-    });
+    }
   }
 }
 

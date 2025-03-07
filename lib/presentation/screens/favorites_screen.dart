@@ -34,8 +34,18 @@ class FavoritesScreen extends StatelessWidget {
             return ListView.builder(
               itemCount: state.favorites.length,
               itemBuilder: (context, index) {
-                return CharacterCard(
-                    character: state.favorites[index], isFavoriteScreen: true);
+                final character = state.favorites[index];
+                return ListTile(
+                  title: Text(character.name),
+                  trailing: IconButton(
+                    icon: Icon(Icons.star, color: Colors.yellow),
+                    onPressed: () {
+                      context
+                          .read<FavoritesBloc>()
+                          .add(ToggleFavorite(character));
+                    },
+                  ),
+                );
               },
             );
           }
