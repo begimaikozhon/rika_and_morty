@@ -1,48 +1,27 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../../data/api_service.dart';
 import '../../data/models/character.dart';
-import 'package:hive/hive.dart';
+import '../../data/repositories/character_repository.dart';
 
 class CharacterBloc extends Bloc<CharacterEvent, CharacterState> {
-  final ApiService apiService;
-  final Box<Character> characterBox;
-  int _currentPage = 1;
-  bool _isFetching = false;
+  final ICharacterRepository repository;
 
-  CharacterBloc(this.apiService, this.characterBox)
-      : super(CharacterLoading()) {
+  CharacterBloc(this.repository) : super(CharacterLoading()) {
     on<LoadCharacters>(_onLoadCharacters);
   }
 
   Future<void> _onLoadCharacters(
       LoadCharacters event, Emitter<CharacterState> emit) async {
-    if (_isFetching) return;
-    _isFetching = true;
-
     try {
-      // Проверяем, есть ли кешированные данные
-      if (characterBox.isNotEmpty && state is CharacterLoading) {
-        print("📦 Загружаем данные из кеша...");
-        emit(CharacterLoaded(characters: characterBox.values.toList()));
+      final characters = await repository.fetchCharacters();
+      emit(CharacterLoaded(characters: characters));
+    } catch (_) {
+      final cached = await repository.fetchFromCache();
+      if (cached.isNotEmpty) {
+        emit(CharacterLoaded(characters: cached));
+      } else {
+        emit(CharacterError("Ошибка загрузки и нет данных в кеше"));
       }
-
-      print("🌍 Загружаем данные с API...");
-      final characters = await apiService.fetchCharacters(_currentPage);
-      _currentPage++;
-
-      // Преобразуем список в Map для сохранения в Hive
-      final characterMap = {for (var c in characters) c.id: c};
-      await characterBox.putAll(characterMap);
-
-      print("✅ Данные загружены и сохранены в Hive!");
-
-      emit(CharacterLoaded(characters: characterBox.values.toList()));
-    } catch (e) {
-      print("❌ Ошибка загрузки: $e");
-      emit(CharacterError("Ошибка загрузки персонажей"));
-    } finally {
-      _isFetching = false;
     }
   }
 }

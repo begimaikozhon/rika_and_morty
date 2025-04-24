@@ -1,23 +1,22 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hive/hive.dart';
+import '../../data/repositories/theme_repository.dart';
 
 class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
-  final Box settingsBox;
+  final IThemeRepository repository;
 
-  ThemeBloc(this.settingsBox) : super(ThemeInitial()) {
+  ThemeBloc(this.repository) : super(ThemeInitial()) {
     on<LoadTheme>((event, emit) {
-      final isDarkMode = settingsBox.get('isDarkMode', defaultValue: false) as bool;
+      final isDarkMode = repository.loadTheme();
       emit(ThemeUpdated(isDarkMode));
     });
 
-    on<ToggleTheme>((event, emit) {
-      settingsBox.put('isDarkMode', event.isDarkMode);
+    on<ToggleTheme>((event, emit) async {
+      await repository.saveTheme(event.isDarkMode);
       emit(ThemeUpdated(event.isDarkMode));
     });
   }
 }
-
 
 abstract class ThemeEvent extends Equatable {
   @override

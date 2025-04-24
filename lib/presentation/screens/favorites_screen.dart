@@ -4,13 +4,34 @@ import '../blocs/theme_bloc.dart';
 import '../widgets/character_card.dart';
 import '../blocs/favorites_bloc.dart';
 
-class FavoritesScreen extends StatelessWidget {
+class FavoritesScreen extends StatefulWidget {
+  @override
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  String _sortType = 'name';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Избранное"),
         actions: [
+          DropdownButton<String>(
+            value: _sortType,
+            items: const [
+              DropdownMenuItem(value: 'name', child: Text("По имени")),
+              DropdownMenuItem(value: 'status', child: Text("По статусу")),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _sortType = value;
+                });
+              }
+            },
+          ),
           BlocBuilder<ThemeBloc, ThemeState>(
             builder: (context, state) {
               bool isDarkMode =
@@ -28,23 +49,18 @@ class FavoritesScreen extends StatelessWidget {
       body: BlocBuilder<FavoritesBloc, FavoritesState>(
         builder: (context, state) {
           if (state is FavoritesLoaded) {
-            if (state.favorites.isEmpty) {
+            final sortedList = state.sorted(_sortType);
+
+            if (sortedList.isEmpty) {
               return Center(child: Text("Избранных персонажей нет"));
             }
             return ListView.builder(
-              itemCount: state.favorites.length,
+              itemCount: sortedList.length,
               itemBuilder: (context, index) {
-                final character = state.favorites[index];
-                return ListTile(
-                  title: Text(character.name),
-                  trailing: IconButton(
-                    icon: Icon(Icons.star, color: Colors.yellow),
-                    onPressed: () {
-                      context
-                          .read<FavoritesBloc>()
-                          .add(ToggleFavorite(character));
-                    },
-                  ),
+                final character = sortedList[index];
+                return CharacterCard(
+                  character: character,
+                  isFavoriteScreen: true,
                 );
               },
             );
